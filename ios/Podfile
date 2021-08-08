@@ -1,0 +1,50 @@
+require_relative '../node_modules/react-native/scripts/react_native_pods'
+require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
+
+platform :ios, '10.0'
+
+use_frameworks!
+
+# Convert all permission pods into static libraries
+pre_install do |installer|
+  Pod::Installer::Xcode::TargetValidator.send(:define_method, :verify_no_static_framework_transitive_dependencies) {}
+
+  installer.pod_targets.each do |pod|
+    if pod.name.eql?('RNPermissions') || pod.name.start_with?('Permission-')
+      def pod.build_type;
+        # Uncomment the line corresponding to your CocoaPods version
+         Pod::BuildType.static_library # >= 1.9
+        # Pod::Target::BuildType.static_library # < 1.9
+      end
+    end
+  end
+end
+
+target 'AppPermissionsDemo' do
+  config = use_native_modules!
+
+  use_react_native!(
+    :path => config[:reactNativePath],
+    # to enable hermes on iOS, change `false` to `true` and then install pods
+    :hermes_enabled => false
+  )
+  
+  permissions_path = '../node_modules/react-native-permissions/ios'
+  pod 'Permission-Camera', :path => "#{permissions_path}/Camera"
+
+
+  target 'AppPermissionsDemoTests' do
+    inherit! :complete
+    # Pods for testing
+  end
+
+  # Enables Flipper.
+  #
+  # Note that if you have use_frameworks! enabled, Flipper will not work and
+  # you should disable the next line.
+  use_flipper!()
+
+  post_install do |installer|
+    react_native_post_install(installer)
+  end
+end
